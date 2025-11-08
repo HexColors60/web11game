@@ -110,66 +110,44 @@ body {
 		</div>
 
 		<script src="index.js"></script>
+		<script>
 
+  // ✅ 不含副檔名的「基底 URL」
+  const WASM_BASE = "https://github.com/HexColors60/web11game/releases/download/v1.0/index";
+  // PCK 可以留在同一目錄，也可以放外部（若外部就改成完整 URL）
+  const PCK_URL   = "index.pck";
 
-<script type="module">
-  // 1️⃣ 先從 CDN 載入 brotli-wasm
-  const brotli = await import("https://unpkg.com/brotli-wasm@3.0.0/index.web.js?module")
-      .then(m => m.default);
-
-  // 2️⃣ 從 GitHub Pages 下載 .wasm.br
-  const res = await fetch("index.wasm.br");
-  const compressed = new Uint8Array(await res.arrayBuffer());
-
-  // 3️⃣ 用 wasm 解壓成原始 .wasm
-  const decompressed = brotli.decompress(compressed);
-
-  // 4️⃣ 建立 blob URL 提供給 Godot engine
-  const wasmBlob = new Blob([decompressed], { type: "application/wasm" });
-  const wasmURL = URL.createObjectURL(wasmBlob);
-
-  // 5️⃣ 正常啟動 Godot Engine
-  const PCK_URL = "index.pck";
   const GODOT_CONFIG = {
     args: [],
     canvasResizePolicy: 2,
     emscriptenPoolSize: 8,
     ensureCrossOriginIsolationHeaders: true,
-    executable: "index",
+    executable: "index", // 保留即可；實際載入以 init(base) 為準
     experimentalVK: false,
-    fileSizes: { "index.pck": 223336 },
+    fileSizes: { "index.pck": 223336 }, // 刪掉任何 index.wasm.br 的紀錄，避免誤導
     focusCanvas: true,
     gdextensionLibs: [],
     godotPoolSize: 4,
   };
+
   const GODOT_THREADS_ENABLED = false;
   const engine = new Engine(GODOT_CONFIG);
 
-  await Promise.all([
-    engine.init(wasmURL),
-    engine.preloadFile(PCK_URL),
-  ]);
-  await engine.start({ args: ["--main-pack", PCK_URL] });
-
-  console.log("✅ Godot Web11Game started from Brotli decompressed wasm");
-/*
-
-const WASM_URL = "https://hexcolors60.github.io/web11game/index.wasm.br"
-const PCK_URL  = "index.pck";
-
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":223336,"index.wasm.br":6500400 },"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
-const GODOT_THREADS_ENABLED = false;
-const engine = new Engine(GODOT_CONFIG);
- // 關鍵改這裡：不用自動推斷 .wasm，改為手動 init + preload + start
-  const engine = new Engine(GODOT_CONFIG);
+  // ✅ 正確：傳入「不含副檔名」的基底 URL
   Promise.all([
-    engine.init(WASM_URL),           // 手動指定 .wasm 位置
-    engine.preloadFile(PCK_URL),     // 同步預載 main pack
+    engine.init(WASM_BASE),
+    engine.preloadFile(PCK_URL),
   ])
   .then(() => engine.start({ args: ["--main-pack", PCK_URL] }))
-  .then(() => console.log("Engine started"))
   .catch((e) => console.error("Failed to start:", e));
+
+/*
+
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":223336,"index.wasm":38034280},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_THREADS_ENABLED = false;
+const engine = new Engine(GODOT_CONFIG);
 */
+
 (function () {
 	const statusOverlay = document.getElementById('status');
 	const statusProgress = document.getElementById('status-progress');
